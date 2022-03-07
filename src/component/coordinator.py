@@ -78,10 +78,13 @@ class Coordinator(SimulatedBaseCoordinator):
                         server_model_version=self.server.model.get_model_version(),
                         client_id=client_id)
 
-                result = self.server.evaluate(self.train_data)
-                self.logger.info(f'Server result: {result}')
+                if i % self.args.evaluation_interval == 0:
+                    self.logger.info(f'Round {i} evaluate on server')
+                    for client_id in self.client_list:
+                        result = self.server.evaluate(self.test_data[client_id])
+                        self.logger.info(f'Test result on Client {client_id}: {result}')
 
-                if self.server.model.get_model_version() % self.args.check_point == 0:
+                if self.server.model.get_model_version() % self.args.checkpoint_interval == 0:
                     self.server.model.save(
                         f'{self.args.name}-{self.server.model.get_model_version()}.pth')
 
@@ -92,7 +95,27 @@ class Coordinator(SimulatedBaseCoordinator):
             self.logger.info(f'Interrupted by user.')
 
     def finish(self) -> None:
-        super(Coordinator, self).finish()
+        self.server.model.save()
+
+        try:
+            if self.args.evaluate_on_client:
+                self.logger.info("Evaluate on client")
+                for client_id in self.client_list:
+                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    result = client.evaluate(data=self.train_data[client_id],
+                                             model=self.server.model)
+                    self.logger.info(f'Train result on Client {client_id}: {result}')
+
+            for client_id in self.client_list:
+                result = self.server.evaluate(self.test_data[client_id])
+                self.logger.info(f'Test result on Client {client_id}: {result}')
+
+            self.logger.info(
+                f'Final server model version: {self.server.model.get_model_version()}')
+        except KeyboardInterrupt:
+            self.logger.info(f'Interrupted by user.')
+
+        self.logger.info(f'All finished.')
 
     def run(self) -> None:
         self.prepare()

@@ -22,6 +22,7 @@ from dataset.fundus import FundusSegmentation
 from component.sampler import FundusSampler
 from component.coordinator import Coordinator
 from component.trainer import Trainer
+from component.evaluator import Evaluator
 
 from net import DeepLab
 
@@ -46,6 +47,8 @@ args = opts().parse([
     '2',
     '--trainer',
     'fundus_trainer',
+    '--evaluator',
+    'fundus_evaluator',
 ])
 
 Injector.register('model', {'deeplab': DeepLab})
@@ -53,6 +56,7 @@ Injector.register('dataset', {'fundus': FundusSegmentation})
 Injector.register('sampler', {'fundus_sampler': FundusSampler})
 Injector.register('coordinator', {'fundus_fedavg': Coordinator})
 Injector.register('trainer', {'fundus_trainer': Trainer})
+Injector.register('evaluator', {'fundus_evaluator': Evaluator})
 
 
 def main():
