@@ -18,6 +18,8 @@ import torch.nn.functional as F
 import fedhf
 from fedhf.component.evaluator import BaseEvaluator
 
+from .metric import BinaryDiceLoss, DiceLoss
+
 
 class Evaluator(BaseEvaluator):
     def __init__(self, args):
@@ -27,7 +29,8 @@ class Evaluator(BaseEvaluator):
         if not client_id:
             client_id = -1
         self.model = model.to(device)
-        self.criterion = nn.BCELoss()
+        # self.criterion = nn.BCELoss()
+        self.criterion = BinaryDiceLoss()
         self.device = device
 
         self.logger.info(f'Start evaluation on {client_id}')
@@ -50,4 +53,4 @@ class Evaluator(BaseEvaluator):
 
         self.logger.info('Evaluate loss: {:.5f}'.format(test_loss / num_img_tr))
 
-        return {'test_loss': test_loss}
+        return {'test_loss': test_loss / num_img_tr}

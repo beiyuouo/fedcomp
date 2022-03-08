@@ -12,7 +12,6 @@ from copy import deepcopy
 
 from tqdm import tqdm, trange
 
-import timeit
 from torchvision.utils import make_grid
 
 import numpy as np
@@ -23,6 +22,8 @@ import torch.nn.functional as F
 
 import fedhf
 from fedhf.component import BaseTrainer
+
+from .metric import BinaryDiceLoss, DiceLoss
 
 
 def get_lr(optimizer):
@@ -67,7 +68,8 @@ class Trainer(BaseTrainer):
         self.train_loader = dataloader
         self.optimizer = self.optim(params=model.parameters(), lr=self.args.lr)
         self.scheduler = self.lr_scheduler(self.optimizer, self.args.lr_step)
-        self.criterion = nn.BCELoss()
+        # self.criterion = nn.BCELoss()
+        self.criterion = BinaryDiceLoss()
 
         for epoch in trange(self.epoch, self.max_epoch, desc='Train', ncols=80):
             torch.cuda.empty_cache()
