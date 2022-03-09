@@ -28,9 +28,21 @@ from component.evaluator import Evaluator
 from net import DeepLab
 
 args = opts().parse([
-    '--use_wandb',
+    # '--use_wandb',
     '--agg',
     'fedasync',
+    '--fedasync_rho',
+    '0.005',
+    '--fedasync_strategy',
+    'polynomial',
+    '--fedasync_alpha',
+    '0.9',
+    '--fedasync_max_staleness',
+    '4',
+    '--fedasync_a',
+    '0.5',
+    '--fedasync_b',
+    '4',
     '--data_dir',
     os.path.join('..', 'data', 'fundus'),
     '--batch_size',
@@ -38,9 +50,9 @@ args = opts().parse([
     '--num_clients',
     '4',
     '--num_rounds',
-    '20',
+    '50',
     '--num_local_epochs',
-    '5',
+    '10',
     '--sampler',
     'fundus_sampler',
     '--model',
@@ -53,8 +65,10 @@ args = opts().parse([
     'fundus_trainer',
     '--evaluator',
     'fundus_evaluator',
-    '--log_file',
-    f'log/log_{time()}.log',
+    '--dataset',
+    'fundus',
+    '--select_ratio',
+    '0.25',
 ])
 
 Injector.register('model', {'deeplab': DeepLab})

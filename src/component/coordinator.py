@@ -195,6 +195,9 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                             result = self.server.evaluate(self.test_data[client_id])
                             self.logger.info(f'Test result on Client {client_id}: {result}')
 
+                    if self.server.model.get_model_version() % 10 == 0:
+                        self.args.lr = self.args.lr * 0.25
+
                     self._model_queue.append(deepcopy(self.server.model))
 
                     while len(self._model_queue) > self.args.fedasync_max_staleness + 1:
