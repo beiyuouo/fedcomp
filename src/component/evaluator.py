@@ -30,7 +30,7 @@ class Evaluator(BaseEvaluator):
             client_id = -1
         self.model = model.to(device)
         # self.criterion = nn.BCELoss()
-        self.criterion = BinaryDiceLoss()
+        self.criterion = DiceLoss()
         self.device = device
 
         self.logger.info(f'Start evaluation on {client_id}')
@@ -40,17 +40,19 @@ class Evaluator(BaseEvaluator):
         num_img_tr = len(dataloader)
         test_loss = 0.0
 
-        for i, sample in enumerate(tbar):
-            # print(sample.keys())
-            image, target = sample['image'], sample['label']
-            # print(image.shape)
-            if self.device is not 'cpu':
-                image, target = image.cuda(), target.cuda()
-            output = self.model(image)
-            loss = self.criterion(torch.sigmoid(output), target)
-            test_loss += loss.item()
-            tbar.set_description('Evaluate loss: %.3f' % (test_loss / (i + 1)))
+        with torch.no_grad():
 
-        self.logger.info('Evaluate loss: {:.5f}'.format(test_loss / num_img_tr))
+            for i, sample in enumerate(tbar):
+                # print(sample.keys())
+                image, target = sample['image'], sample['label']
+                # print(image.shape)
+                if self.device is not 'cpu':
+                    image, target = image.cuda(), target.cuda()
+                output = self.model(image)
+                loss = self.criterion(torch.sigmoid(output), target)
+                test_loss += loss.item()
+                tbar.set_description('Evaluate loss: %.3f' % (test_loss / (i + 1)))
+
+            self.logger.info('Evaluate loss: {:.5f}'.format(test_loss / num_img_tr))
 
         return {'test_loss': test_loss / num_img_tr}

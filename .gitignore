@@ -131,3 +131,4 @@ data/fundus
 chkp/
 dataset/
 wandb/
+log/

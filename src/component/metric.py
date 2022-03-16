@@ -81,7 +81,7 @@ class DiceLoss(nn.Module):
         self.ignore_index = ignore_index
 
     def forward(self, predict, target):
-        assert predict.shape == target.shape, 'predict & target shape do not match'
+        assert predict.shape == target.shape, 'predict & target shape do not match, {} vs {}'.format(predict.shape, target.shape)
         dice = BinaryDiceLoss(**self.kwargs)
         total_loss = 0
         predict = F.softmax(predict, dim=1)

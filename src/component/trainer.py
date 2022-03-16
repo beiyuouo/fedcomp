@@ -32,6 +32,7 @@ def get_lr(optimizer):
 
 
 class Trainer(BaseTrainer):
+
     def __init__(self, args):
         super(Trainer, self).__init__(args)
         self.epoch = 0
@@ -66,10 +67,10 @@ class Trainer(BaseTrainer):
         self.model = model.to(device)
 
         self.train_loader = dataloader
-        self.optimizer = self.optim(params=model.parameters(), lr=self.args.lr)
+        self.optimizer = self.optim(params=self.model.parameters(), lr=self.args.lr)
         self.scheduler = self.lr_scheduler(self.optimizer, self.args.lr_step)
         # self.criterion = nn.BCELoss()
-        self.criterion = BinaryDiceLoss()
+        self.criterion = DiceLoss()
 
         for epoch in trange(self.epoch, self.max_epoch, desc='Train', ncols=80):
             torch.cuda.empty_cache()
