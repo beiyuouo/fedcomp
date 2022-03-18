@@ -48,6 +48,7 @@ class SyncCoordinator(SimulatedBaseCoordinator):
         In simulated scheme, the data and model belong to coordinator and there is no need communicator.
         Also, there is no need to instantiate every client.
     """
+
     def __init__(self, args) -> None:
         super(SyncCoordinator, self).__init__(args)
 
@@ -72,13 +73,10 @@ class SyncCoordinator(SimulatedBaseCoordinator):
                 for client_id in selected_client:
                     model = deepcopy(self.server.model)
                     client = build_client(self.args.deploy_mode)(self.args, client_id)
-                    model = client.train(self.train_data[client_id],
-                                         model,
-                                         device=self.args.device)
-                    self.server.update(
-                        model,
-                        server_model_version=self.server.model.get_model_version(),
-                        client_id=client_id)
+                    model = client.train(self.train_data[client_id], model, device=self.args.device)
+                    self.server.update(model,
+                                       server_model_version=self.server.model.get_model_version(),
+                                       client_id=client_id)
 
                 if i % self.args.evaluation_interval == 0:
                     self.logger.info(f'Round {i} evaluate on server')
@@ -112,8 +110,7 @@ class SyncCoordinator(SimulatedBaseCoordinator):
                 result = self.server.evaluate(self.test_data[client_id])
                 self.logger.info(f'Test result on Client {client_id}: {result}')
 
-            self.logger.info(
-                f'Final server model version: {self.server.model.get_model_version()}')
+            self.logger.info(f'Final server model version: {self.server.model.get_model_version()}')
         except KeyboardInterrupt:
             self.logger.info(f'Interrupted by user.')
 
@@ -126,6 +123,7 @@ class SyncCoordinator(SimulatedBaseCoordinator):
 
 
 class AsyncCoordinator(SimulatedBaseCoordinator):
+
     def __init__(self, args) -> None:
         super(AsyncCoordinator, self).__init__(args)
 
@@ -159,9 +157,9 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                     staleness = np.random.randint(
                         low=1,
                         high=min(self.args.fedasync_max_staleness,
-                                 self.server.model.get_model_version() + 1) + 1)
+                                 max(0, self.server.model.get_model_version()) + 1) + 1)
 
-                    assert staleness <= self.server.model.get_model_version() + 1
+                    assert staleness <= max(0, self.server.model.get_model_version()) + 1
                     assert staleness <= len(self._model_queue)
 
                     self.logger.info(
@@ -172,24 +170,20 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                                          model=deepcopy(self._model_queue[-staleness]),
                                          device=self.args.device)
 
-                    self.server.update(
-                        model,
-                        server_model_version=self.server.model.get_model_version(),
-                        client_model_version=model.get_model_version())
+                    self.server.update(model,
+                                       server_model_version=self.server.model.get_model_version(),
+                                       client_model_version=model.get_model_version())
 
-                    if self.server.model.get_model_version(
-                    ) % self.args.checkpoint_interval == 0:
+                    if self.server.model.get_model_version() % self.args.checkpoint_interval == 0:
                         self.logger.info(
                             f'Save model: {self.args.name}-{self.server.model.get_model_version()}.pth'
                         )
                         self.server.model.save(
                             os.path.join(
                                 self.args.save_dir,
-                                f'{self.args.name}-{self.server.model.get_model_version()}.pth')
-                        )
+                                f'{self.args.name}-{self.server.model.get_model_version()}.pth'))
 
-                    if self.server.model.get_model_version(
-                    ) % self.args.evaluation_interval == 0:
+                    if self.server.model.get_model_version() % self.args.evaluation_interval == 0:
                         self.logger.info(f'Round {i} evaluate on server')
                         for client_id in self.client_list:
                             result = self.server.evaluate(self.test_data[client_id])
@@ -225,8 +219,7 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                 result = self.server.evaluate(self.test_data[client_id])
                 self.logger.info(f'Test result on Client {client_id}: {result}')
 
-            self.logger.info(
-                f'Final server model version: {self.server.model.get_model_version()}')
+            self.logger.info(f'Final server model version: {self.server.model.get_model_version()}')
         except KeyboardInterrupt:
             self.logger.info(f'Interrupted by user.')
 

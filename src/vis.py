@@ -30,9 +30,9 @@ from fedhf.api import opts
 from fedhf.model.nn import UNet
 
 opt = argparse.ArgumentParser()
-opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'best.pth'))
+opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'model.pth'))
 
-from component.metric import DiceLoss
+from component.metric import *
 
 from dataset import transform as tr
 
@@ -74,6 +74,9 @@ def main():
     # model = DeepLab(opts().parse(['--num_classes', '2']))
     model = UNet(opts().parse(
         ['--num_classes', '2', '--unet_n1', '16', '--input_c', '3', '--output_c', '2']))
+    # model.load_state_dict(torch.load(model_path))
+    # print(torch.load(model_path))
+    # print(torch.load(model_path).keys())
     model.load(model_path)
     model.eval()
 
@@ -90,7 +93,7 @@ def main():
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=False)
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-        criterion = DiceLoss()
+        criterion = dice_loss
 
         # train_loss = 0.0
         # test_loss = 0.0
@@ -120,15 +123,30 @@ def main():
         # print(f'Domain{i} Test loss: {test_loss / len(test_loader)}')
 
         tbar = tqdm(test_loader)
-        for i, sample in enumerate(tbar):
-            with torch.no_grad():
+        with torch.no_grad():
+            for i, sample in enumerate(tbar):
                 image, target = sample['image'], sample['label']
                 output = model(image)
                 output = torch.sigmoid(output)
-                # print(output.shape)
 
-                gt_img = make_grid([target[0][0], target[0][1]])
-                pred_img = make_grid([output[0][0], output[0][1]])
+                # print(torch.nn.BCELoss()(output, target))
+
+                # print(output.shape)
+                # print(target.shape)
+
+                # print(target[0][0])
+                # print(target[0][1])
+                # print(output[0][0])
+                # print(output[0][1])
+                # print(criterion(output, target))
+                output[output > 0.5] = 1
+                output[output <= 0.5] = 0
+
+                # print(f'count 0: {torch.sum(output == 0).item()}')
+                # print(f'count 1: {torch.sum(output == 1).item()}')
+
+                # gt_img = make_grid(target)
+                # pred_img = make_grid(output)
 
                 # print(gt_img.shape)
                 # print(pred_img.shape)
@@ -136,7 +154,7 @@ def main():
                 # print(gt_img.unique())
                 # print(pred_img.unique())
 
-                show([image[0], gt_img[0], gt_img[1], pred_img[0], pred_img[1]])
+                show([image[0], target[0][0], target[0][1], output[0][0], output[0][1]])
 
                 plt.show()
                 plt.savefig(os.path.join('log', 'vis', f'Domain{domain_id}_test{i}.png'))

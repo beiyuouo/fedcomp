@@ -23,7 +23,7 @@ import torch.nn.functional as F
 import fedhf
 from fedhf.component import BaseTrainer
 
-from .metric import BinaryDiceLoss, DiceLoss
+from .metric import *
 
 
 def get_lr(optimizer):
@@ -46,11 +46,23 @@ class Trainer(BaseTrainer):
             # print(sample.keys())
             image, target = sample['image'], sample['label']
             # print(image.shape)
-            if self.device is not 'cpu':
+            if self.device != 'cpu':
                 image, target = image.cuda(), target.cuda()
             self.optimizer.zero_grad()
             output = self.model(image)
             loss = self.criterion(torch.sigmoid(output), target)
+
+            # _output = torch.sigmoid(output).detach().cpu().numpy()
+            # _output[_output < 0.5] = 0
+            # _output[_output >= 0.5] = 1
+
+            # import matplotlib.pyplot as plt
+            # plt.imshow(_output[0, 0, :, :])
+            # plt.show()
+
+            # print(f'count 0: {torch.sum(_output == 0).item()}')
+            # print(f'count 1: {torch.sum(_output == 1).item()}')
+
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
@@ -69,13 +81,15 @@ class Trainer(BaseTrainer):
         self.train_loader = dataloader
         self.optimizer = self.optim(params=self.model.parameters(), lr=self.args.lr)
         self.scheduler = self.lr_scheduler(self.optimizer, self.args.lr_step)
-        # self.criterion = nn.BCELoss()
-        self.criterion = DiceLoss()
+        self.criterion = nn.BCELoss()
+        # self.criterion = DiceLoss()
 
         for epoch in trange(self.epoch, self.max_epoch, desc='Train', ncols=80):
             torch.cuda.empty_cache()
             self.epoch = epoch
             self.train_epoch()
             self.scheduler.step()
+
+        # torch.save(self.model.state_dict(), './chkp/model.pth')
 
         return {'model': self.model, 'train_loss': self.train_loss}

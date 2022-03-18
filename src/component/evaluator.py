@@ -18,10 +18,11 @@ import torch.nn.functional as F
 import fedhf
 from fedhf.component.evaluator import BaseEvaluator
 
-from .metric import BinaryDiceLoss, DiceLoss
+from .metric import *
 
 
 class Evaluator(BaseEvaluator):
+
     def __init__(self, args):
         super(Evaluator, self).__init__(args)
 
@@ -30,7 +31,7 @@ class Evaluator(BaseEvaluator):
             client_id = -1
         self.model = model.to(device)
         # self.criterion = nn.BCELoss()
-        self.criterion = DiceLoss()
+        self.criterion = dice_loss
         self.device = device
 
         self.logger.info(f'Start evaluation on {client_id}')
@@ -46,11 +47,20 @@ class Evaluator(BaseEvaluator):
                 # print(sample.keys())
                 image, target = sample['image'], sample['label']
                 # print(image.shape)
-                if self.device is not 'cpu':
+                if self.device != 'cpu':
                     image, target = image.cuda(), target.cuda()
                 output = self.model(image)
+
+                # _output = torch.sigmoid(output).detach().cpu().numpy()
+                # _output[_output < 0.5] = 0
+                # _output[_output >= 0.5] = 1
+
+                # import matplotlib.pyplot as plt
+                # plt.imshow(_output[0, 0, :, :])
+                # plt.show()
+
                 loss = self.criterion(torch.sigmoid(output), target)
-                test_loss += loss.item()
+                test_loss += loss
                 tbar.set_description('Evaluate loss: %.3f' % (test_loss / (i + 1)))
 
             self.logger.info('Evaluate loss: {:.5f}'.format(test_loss / num_img_tr))
