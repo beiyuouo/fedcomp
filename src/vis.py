@@ -156,7 +156,7 @@ def main():
 
                 show([image[0], target[0][0], target[0][1], output[0][0], output[0][1]])
 
-                plt.show()
+                # plt.show()
                 plt.savefig(os.path.join('log', 'vis', f'Domain{domain_id}_test{i}.png'))
                 plt.close()
 

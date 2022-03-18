@@ -186,6 +186,9 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                     if self.server.model.get_model_version() % self.args.evaluation_interval == 0:
                         self.logger.info(f'Round {i} evaluate on server')
                         for client_id in self.client_list:
+                            result = self.server.evaluate(self.train_data[client_id])
+                            self.logger.info(f'Train result on Client {client_id}: {result}')
+
                             result = self.server.evaluate(self.test_data[client_id])
                             self.logger.info(f'Test result on Client {client_id}: {result}')
 
@@ -216,6 +219,9 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                     self.logger.info(f'Train result on Client {client_id}: {result}')
 
             for client_id in self.client_list:
+                result = self.server.evaluate(self.train_data[client_id])
+                self.logger.info(f'Train result on Client {client_id}: {result}')
+
                 result = self.server.evaluate(self.test_data[client_id])
                 self.logger.info(f'Test result on Client {client_id}: {result}')
 

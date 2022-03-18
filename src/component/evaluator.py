@@ -30,8 +30,8 @@ class Evaluator(BaseEvaluator):
         if not client_id:
             client_id = -1
         self.model = model.to(device)
-        # self.criterion = nn.BCELoss()
-        self.criterion = dice_loss
+        self.criterion = nn.BCELoss()
+        # self.criterion = dice_loss
         self.device = device
 
         self.logger.info(f'Start evaluation on {client_id}')
@@ -39,7 +39,8 @@ class Evaluator(BaseEvaluator):
         model.eval()
         tbar = tqdm(dataloader)
         num_img_tr = len(dataloader)
-        test_loss = 0.0
+        test_bce_loss = 0.0
+        test_dice_loss = 0.0
 
         with torch.no_grad():
 
@@ -51,18 +52,29 @@ class Evaluator(BaseEvaluator):
                     image, target = image.cuda(), target.cuda()
                 output = self.model(image)
 
-                # _output = torch.sigmoid(output).detach().cpu().numpy()
-                # _output[_output < 0.5] = 0
-                # _output[_output >= 0.5] = 1
+                if (i + 1) % 10 == 0:
+                    _output = torch.sigmoid(output).detach().cpu().numpy()
+                    _output[_output < 0.5] = 0
+                    _output[_output >= 0.5] = 1
 
-                # import matplotlib.pyplot as plt
-                # plt.imshow(_output[0, 0, :, :])
-                # plt.show()
+                    import matplotlib.pyplot as plt
+                    plt.imshow(_output[0, 0, :, :])
+                    plt.savefig(f'{self.args.save_dir}/{int(time.time())}_{client_id}_{i}.png')
+                    # plt.show()
+                    plt.close()
 
-                loss = self.criterion(torch.sigmoid(output), target)
-                test_loss += loss
-                tbar.set_description('Evaluate loss: %.3f' % (test_loss / (i + 1)))
+                bce_loss = self.criterion(torch.sigmoid(output), target)
+                test_bce_loss += bce_loss.item()
+                dice_loss_ = dice_loss(torch.sigmoid(output), target)
+                test_dice_loss += dice_loss_
 
-            self.logger.info('Evaluate loss: {:.5f}'.format(test_loss / num_img_tr))
+                tbar.set_description('Test loss: %.3f' % (test_bce_loss / (i + 1)))
 
-        return {'test_loss': test_loss / num_img_tr}
+            self.logger.info(
+                f'[{client_id}] Test BCE loss: {test_bce_loss / num_img_tr} Test dice loss: {test_dice_loss / num_img_tr}'
+            )
+
+        return {
+            'test_bce_loss': test_bce_loss / num_img_tr,
+            'test_dice_loss': test_dice_loss / num_img_tr
+        }

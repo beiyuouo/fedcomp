@@ -50,7 +50,9 @@ class Trainer(BaseTrainer):
                 image, target = image.cuda(), target.cuda()
             self.optimizer.zero_grad()
             output = self.model(image)
-            loss = self.criterion(torch.sigmoid(output), target)
+            l2_reg = self._calc_l2_reg(self.model_, self.model)
+            loss = self.criterion(torch.sigmoid(output), target) + l2_reg * self.args.fedasync_rho / 2
+
 
             # _output = torch.sigmoid(output).detach().cpu().numpy()
             # _output[_output < 0.5] = 0
@@ -77,6 +79,8 @@ class Trainer(BaseTrainer):
         self.max_epoch = num_epochs
         self.device = device
         self.model = model.to(device)
+        self.model_ = deepcopy(model)
+        self.model_.to(device)
 
         self.train_loader = dataloader
         self.optimizer = self.optim(params=self.model.parameters(), lr=self.args.lr)
@@ -93,3 +97,9 @@ class Trainer(BaseTrainer):
         # torch.save(self.model.state_dict(), './chkp/model.pth')
 
         return {'model': self.model, 'train_loss': self.train_loss}
+
+    def _calc_l2_reg(self, global_model, model):
+        l2_reg = 0
+        for p1, p2 in zip(global_model.parameters(), model.parameters()):
+            l2_reg += (p1 - p2).norm(2)
+        return l2_reg

@@ -36,7 +36,7 @@ args = opts().parse([
     '--fedasync_strategy',
     'polynomial',
     '--fedasync_alpha',
-    '0.9',
+    '0.6',
     '--fedasync_max_staleness',
     '4',
     '--fedasync_a',
@@ -50,7 +50,7 @@ args = opts().parse([
     '--num_clients',
     '4',
     '--num_rounds',
-    '1',
+    '40',
     '--num_local_epochs',
     '10',
     '--sampler',
@@ -77,6 +77,9 @@ args = opts().parse([
     # '1',
     '--select_ratio',
     '0.25',
+    '--evaluation_interval',
+    '5',
+    '--evaluate_on_client',
 ])
 
 Injector.register('model', {'deeplab': DeepLab})
@@ -90,6 +93,7 @@ Injector.register('evaluator', {'fundus_evaluator': Evaluator})
 
 def main():
     coo = AsyncCoordinator(args)
+    # coo = SyncCoordinator(args)
     coo.run()
 
 
