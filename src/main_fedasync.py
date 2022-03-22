@@ -30,7 +30,19 @@ from net import DeepLab
 args = opts().parse([
     # '--use_wandb',
     '--agg',
-    'fedavg',
+    'fedasync',
+    '--fedasync_rho',
+    '0.005',
+    '--fedasync_strategy',
+    'polynomial',
+    '--fedasync_alpha',
+    '0.6',
+    '--fedasync_max_staleness',
+    '4',
+    '--fedasync_a',
+    '0.5',
+    '--fedasync_b',
+    '4',
     '--data_dir',
     os.path.join('..', 'data', 'fundus'),
     '--batch_size',
@@ -38,7 +50,7 @@ args = opts().parse([
     '--num_clients',
     '4',
     '--num_rounds',
-    '10',
+    '20',
     '--num_local_epochs',
     '10',
     '--sampler',
@@ -64,7 +76,7 @@ args = opts().parse([
     # '--seed',
     # '1',
     '--select_ratio',
-    '1',
+    '0.25',
     '--evaluation_interval',
     '5',
     '--evaluate_on_client',
@@ -80,8 +92,8 @@ Injector.register('evaluator', {'fundus_evaluator': Evaluator})
 
 
 def main():
-    # coo = AsyncCoordinator(args)
-    coo = SyncCoordinator(args)
+    coo = AsyncCoordinator(args)
+    # coo = SyncCoordinator(args)
     coo.run()
 
 
