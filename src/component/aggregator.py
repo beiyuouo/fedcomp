@@ -40,28 +40,39 @@ class FedEyeAggregator(AsyncAggregator):
         server_model_version = kwargs['server_model_version']
         self._cur_round += 1
 
-        if client_id not in self._update_time:
+        if client_id not in self._update_time.keys():
             # solve initial error
             self._total_client += 1
-            _expect_times = max(self._cur_round / self.args.num_clients, 1)
-            new_param = server_param * (
-                (self._total_client + 1) / self._total_client) + client_param * (
-                    1 / self._total_client) * (1 / (np.log(_expect_times) + 1))
+            if self._cur_round == 1:
+                new_param = client_param
+            else:
+                _expect_times = max(self._cur_round / self.args.num_clients, 1)
+                # to tensor
+                _expect_times = torch.tensor(_expect_times, dtype=torch.float32)
+                _expect_weight = 1 / (torch.log(_expect_times) + 1)
+                _server_param = torch.mul(server_param,
+                                          (self._total_client - 1) / (self._total_client))
+                _client_param = torch.mul(client_param, 1 / self._total_client)
+                new_param = torch.add(torch.mul(_server_param, 1 - _expect_weight),
+                                      torch.mul(_client_param, _expect_weight))
 
         else:
             staleness = server_model_version - self._update_time[client_id] + 1
+            staleness = torch.tensor(staleness, dtype=torch.float32)
             update_from_param = torch.sub(client_param, client_grad)
             gc = torch.sub(client_param, update_from_param)
-            gs = torch.sub(server_param, update_from_param) * (np.log(staleness) + 1)
-            alpha = torch.div(torch.dot(gs, gc), gc.norm()**2)
+            gs = torch.sub(server_param, update_from_param)
+            alpha = torch.div(torch.dot(gs, gc), gc.norm()**2) * (torch.log(staleness) + 1)
+            self.logger.info(f"alpha is {alpha}")
 
             if not torch.equal(
                     gs, torch.zeros_like(gs)) and torch.is_nonzero(alpha) and torch.dot(gc, gs) < 0:
-                self.logger.info(f"alpha is {alpha}")
+                self.logger.info(f"solve conflicts")
                 new_param = torch.add(update_from_param, torch.sub(gs, torch.mul(alpha, gc)))
             else:
                 self.logger.info(f"add gc directly")
-                new_param = server_param + self.alpha * gc
+                new_param = torch.add(server_param, torch.mul(alpha, gc))
+                # new_param = server_param + self.alpha * gc
 
         self._update_time[client_id] = server_model_version + 1
 

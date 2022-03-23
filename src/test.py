@@ -111,7 +111,7 @@ def main():
                 image, target = sample['image'], sample['label']
                 output = model(image)
                 # count nan number
-                print(torch.sum(torch.isnan(torch.sigmoid(output))))
+                # print(torch.sum(torch.isnan(output)))
                 _bce_loss_tr += nn.BCELoss()(torch.sigmoid(output), target).item()
                 _dice_loss_tr += dice_loss(output, target)
                 tbar.set_description(
