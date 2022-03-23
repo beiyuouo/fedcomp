@@ -65,7 +65,7 @@ class Evaluator(BaseEvaluator):
 
                 bce_loss = self.criterion(torch.sigmoid(output), target)
                 test_bce_loss += bce_loss.item()
-                dice_loss_ = dice_loss(torch.sigmoid(output), target)
+                dice_loss_ = dice_loss(output, target)
                 test_dice_loss += dice_loss_
 
                 tbar.set_description('Test loss: %.3f' % (test_bce_loss / (i + 1)))

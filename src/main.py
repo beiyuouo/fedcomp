@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @File    :   experiments\fedeye\src\main_fedasync.py
-# @Time    :   2022-03-22 18:34:39
+# @File    :   experiments\fedeye\src\main.py
+# @Time    :   2022-03-22 18:34:28
 # @Author  :   Bingjie Yan
 # @Email   :   bj.yan.pa@qq.com
 # @License :   Apache License 2.0
@@ -21,28 +21,17 @@ from fedhf.api import opts
 
 from dataset.fundus import FundusSegmentation
 from component.sampler import FundusSampler
-from component.coordinator import SyncCoordinator, AsyncCoordinator
+from component.coordinator import SyncCoordinator, AsyncCoordinator, FedEyeCoordinator
 from component.trainer import Trainer
 from component.evaluator import Evaluator
+from component.aggregator import FedEyeAggregator
 
 from net import DeepLab
 
 args = opts().parse([
     # '--use_wandb',
     '--agg',
-    'fedasync',
-    '--fedasync_rho',
-    '0.005',
-    '--fedasync_strategy',
-    'polynomial',
-    '--fedasync_alpha',
-    '0.1',
-    '--fedasync_max_staleness',
-    '4',
-    '--fedasync_a',
-    '0.5',
-    '--fedasync_b',
-    '4',
+    'fedeye',
     '--data_dir',
     os.path.join('..', 'data', 'fundus'),
     '--batch_size',
@@ -87,13 +76,16 @@ Injector.register('dataset', {'fundus': FundusSegmentation})
 Injector.register('sampler', {'fundus_sampler': FundusSampler})
 Injector.register('coordinator', {'fundus_fedavg': SyncCoordinator})
 Injector.register('coordinator', {'fundus_fedasync': AsyncCoordinator})
+Injector.register('coordinator', {'fundus_fedeye': FedEyeCoordinator})
 Injector.register('trainer', {'fundus_trainer': Trainer})
 Injector.register('evaluator', {'fundus_evaluator': Evaluator})
+Injector.register('aggregator', {'fedeye': FedEyeAggregator})
 
 
 def main():
-    coo = AsyncCoordinator(args)
+    # coo = AsyncCoordinator(args)
     # coo = SyncCoordinator(args)
+    coo = FedEyeCoordinator(args)
     coo.run()
 
 
