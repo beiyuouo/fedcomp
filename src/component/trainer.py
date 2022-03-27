@@ -51,8 +51,9 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             output = self.model(image)
             l2_reg = self._calc_l2_reg(self.model_, self.model)
-            loss = self.criterion(torch.sigmoid(output), target) + l2_reg * self.args.fedasync_rho / 2
-
+            loss = self.criterion(torch.sigmoid(output),
+                                  target) + l2_reg * self.args.fedasync_rho / 2
+            # + dice_loss(output, target)
 
             # _output = torch.sigmoid(output).detach().cpu().numpy()
             # _output[_output < 0.5] = 0
