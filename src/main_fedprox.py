@@ -44,7 +44,7 @@ args = opts().parse([
     '--sampler',
     'fundus_sampler',
     '--model',
-    'unet',
+    'unet_mini',
     '--unet_n1',
     '4',
     '--unet_bilinear',
