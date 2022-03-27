@@ -1,12 +1,10 @@
-#!/usr/bin/env python 
-# -*- coding: utf-8 -*- 
-# @File    :   experiments\fedeye\src\main_fedprox.py 
-# @Time    :   2022-03-22 18:34:34 
-# @Author  :   Bingjie Yan 
-# @Email   :   bj.yan.pa@qq.com 
-# @License :   Apache License 2.0 
-
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @File    :   experiments\fedeye\src\main_fedprox.py
+# @Time    :   2022-03-22 18:34:34
+# @Author  :   Bingjie Yan
+# @Email   :   bj.yan.pa@qq.com
+# @License :   Apache License 2.0
 
 import os
 import sys
@@ -68,7 +66,7 @@ args = opts().parse([
     '--select_ratio',
     '1',
     '--evaluation_interval',
-    '5',
+    '1',
     '--evaluate_on_client',
 ])
 

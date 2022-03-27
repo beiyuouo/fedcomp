@@ -285,6 +285,10 @@ class FedEyeCoordinator(SimulatedBaseCoordinator):
 
                 client = build_client(self.args.deploy_mode)(self.args, client_id)
 
+                self.logger.info(
+                    f'Round {i} start train on Client {client_id} with model version : {self._last_update_time[client_id]}'
+                )
+
                 _model = build_model(self.args.model)(self.args)
                 _model.load(path=self._model_path[self._last_update_time[client_id]])
 
@@ -298,7 +302,8 @@ class FedEyeCoordinator(SimulatedBaseCoordinator):
                 self.server.update(model,
                                    server_model_version=self.server.model.get_model_version(),
                                    client_id=client_id,
-                                   client_grad=client_grad)
+                                   client_grad=client_grad,
+                                   model_structure=self.server.model)
 
                 if self.server.model.get_model_version() % self.args.checkpoint_interval == 0:
                     self.logger.info(

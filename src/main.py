@@ -41,7 +41,7 @@ args = opts().parse([
     '--num_rounds',
     '20',
     '--num_local_epochs',
-    '5',
+    '3',
     '--sampler',
     'fundus_sampler',
     '--model',
@@ -69,6 +69,8 @@ args = opts().parse([
     '--evaluation_interval',
     '1',
     '--evaluate_on_client',
+    '--checkpoint_interval',
+    '5',
 ])
 
 Injector.register('model', {'deeplab': DeepLab})
