@@ -21,7 +21,7 @@ from fedhf.api import opts
 
 from dataset.fundus import FundusSegmentation
 from component.sampler import FundusSampler
-from component.coordinator import SyncCoordinator, AsyncCoordinator
+from component.coordinator import SyncCoordinator, AsyncCoordinator, AsyncCoordinatorUnlimited
 from component.trainer import Trainer
 from component.evaluator import Evaluator
 
@@ -74,8 +74,8 @@ args = opts().parse([
     'fundus_evaluator',
     '--dataset',
     'fundus',
-    # '--seed',
-    # '1',
+    '--seed',
+    '2333',
     '--select_ratio',
     '0.25',
     '--evaluation_interval',
@@ -86,8 +86,6 @@ args = opts().parse([
 Injector.register('model', {'deeplab': DeepLab})
 Injector.register('dataset', {'fundus': FundusSegmentation})
 Injector.register('sampler', {'fundus_sampler': FundusSampler})
-Injector.register('coordinator', {'fundus_fedavg': SyncCoordinator})
-Injector.register('coordinator', {'fundus_fedasync': AsyncCoordinator})
 Injector.register('trainer', {'fundus_trainer': Trainer})
 Injector.register('evaluator', {'fundus_evaluator': Evaluator})
 
@@ -98,5 +96,11 @@ def main():
     coo.run()
 
 
+def main_unlimited():
+    coo = AsyncCoordinatorUnlimited(args)
+    coo.run()
+
+
 if __name__ == '__main__':
     main()
+    # main_unlimited()

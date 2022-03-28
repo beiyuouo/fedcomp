@@ -34,9 +34,12 @@ from fedhf.model.nn import UNet, UNetMini
 
 opt = argparse.ArgumentParser()
 # opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedeye.pth'))
-# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedasync.pth'))
+opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedasync.pth'))
+# opt.add_argument('--model_path',
+#  type=str,
+#                  default=os.path.join('chkp', 'archive', 'fedasync-unlimit.pth'))
 # opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedprox.pth'))
-opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedavg.pth'))
+# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedavg.pth'))
 
 from component.metric import *
 

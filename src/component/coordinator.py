@@ -218,6 +218,7 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
 
     def finish(self) -> None:
         self.server.model.save()
+        self.server.model.save('model.pth')
 
         try:
             if self.args.evaluate_on_client:
@@ -304,6 +305,118 @@ class FedEyeCoordinator(SimulatedBaseCoordinator):
                                    client_id=client_id,
                                    client_grad=client_grad,
                                    model_structure=self.server.model)
+
+                if self.server.model.get_model_version() % self.args.checkpoint_interval == 0:
+                    self.logger.info(
+                        f'Save model: {self.args.name}-{self.server.model.get_model_version()}.pth')
+                    self.server.model.save(
+                        os.path.join(
+                            self.args.save_dir,
+                            f'{self.args.name}-{self.server.model.get_model_version()}.pth'))
+
+                if self.server.model.get_model_version() % self.args.evaluation_interval == 0:
+                    self.logger.info(f'Round {i} evaluate on server')
+                    for client_id in self.client_list:
+                        result = self.server.evaluate(self.train_data[client_id])
+                        self.logger.info(f'Train result on Client {client_id}: {result}')
+
+                        result = self.server.evaluate(self.test_data[client_id])
+                        self.logger.info(f'Test result on Client {client_id}: {result}')
+
+                if self.server.model.get_model_version() % 10 == 0:
+                    self.args.lr = self.args.lr * 0.25
+
+                self.server.model.save(path=os.path.join(
+                    self._temp_dir, f'model_{self.server.model.get_model_version()}.pth'))
+                self._model_path.append(
+                    os.path.join(self._temp_dir,
+                                 f'model_{self.server.model.get_model_version()}.pth'))
+                self._last_update_time[client_id] = self.server.model.get_model_version()
+
+            self.logger.info(f'All rounds finished.')
+
+        except KeyboardInterrupt:
+            self.server.model.save()
+            self.logger.info(f'Interrupted by user.')
+
+    def finish(self) -> None:
+        self.server.model.save()
+
+        try:
+            if self.args.evaluate_on_client:
+                self.logger.info("Evaluate on client")
+                for client_id in self.client_list:
+                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    result = client.evaluate(data=self.train_data[client_id],
+                                             model=self.server.model)
+                    self.logger.info(f'Train result on Client {client_id}: {result}')
+
+            for client_id in self.client_list:
+                result = self.server.evaluate(self.train_data[client_id])
+                self.logger.info(f'Train result on Client {client_id}: {result}')
+
+                result = self.server.evaluate(self.test_data[client_id])
+                self.logger.info(f'Test result on Client {client_id}: {result}')
+
+            self.logger.info(f'Final server model version: {self.server.model.get_model_version()}')
+        except KeyboardInterrupt:
+            self.logger.info(f'Interrupted by user.')
+
+        self.logger.info(f'All finished.')
+
+
+class AsyncCoordinatorUnlimited(SimulatedBaseCoordinator):
+
+    def __init__(self, args) -> None:
+        super(AsyncCoordinatorUnlimited, self).__init__(args)
+
+    def prepare(self) -> None:
+        self.sampler = build_sampler(self.args.sampler)(self.args)
+
+        self.train_data = self.sampler.sample(split='train', tr=composed_transforms_tr)
+        self.test_data = self.sampler.sample(split='test', tr=composed_transforms_ts)
+
+        self.client_list = [i for i in range(self.args.num_clients)]
+        self.server = build_server(self.args.deploy_mode)(self.args)
+
+        assert self.args.deploy_mode == 'simulated'
+
+        self._update_order = np.random.choice(self.client_list, self.args.num_rounds)
+        self.logger.info(f'update order: {self._update_order}')
+        self._last_update_time = {i: 0 for i in self.client_list}
+
+        self._temp_dir = './temp'
+        if not os.path.exists(self._temp_dir):
+            os.makedirs(self._temp_dir)
+
+        self._model_path = []
+
+    def main(self) -> None:
+        try:
+            self.server.model.save(path=os.path.join(self._temp_dir, f'model_{0}.pth'))
+            self._model_path.append(os.path.join(self._temp_dir, f'model_{0}.pth'))
+
+            for i in range(self.args.num_rounds):
+                # self.logger.info(f'{self.server.model.get_model_version()}')
+
+                client_id = self._update_order[i]
+
+                client = build_client(self.args.deploy_mode)(self.args, client_id)
+
+                self.logger.info(
+                    f'Round {i} start train on Client {client_id} with model version : {self._last_update_time[client_id]}'
+                )
+
+                _model = build_model(self.args.model)(self.args)
+                _model.load(path=self._model_path[self._last_update_time[client_id]])
+
+                model = client.train(data=self.train_data[client_id],
+                                     model=deepcopy(_model),
+                                     device=self.args.device)
+
+                self.server.update(model,
+                                   server_model_version=self.server.model.get_model_version(),
+                                   client_model_version=model.get_model_version())
 
                 if self.server.model.get_model_version() % self.args.checkpoint_interval == 0:
                     self.logger.info(
