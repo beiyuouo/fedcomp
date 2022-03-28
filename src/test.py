@@ -9,6 +9,8 @@
 import os
 import sys
 
+from fedhf.model.nn.unet import UNetMini
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from time import time
@@ -28,10 +30,13 @@ from dataset.fundus import FundusSegmentation
 from net import DeepLab
 
 from fedhf.api import opts
-from fedhf.model.nn import UNet
+from fedhf.model.nn import UNet, UNetMini
 
 opt = argparse.ArgumentParser()
-opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedeye.pth'))
+# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedeye.pth'))
+# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedasync.pth'))
+# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedprox.pth'))
+opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedavg.pth'))
 
 from component.metric import *
 
@@ -73,8 +78,10 @@ def main():
     model_path = args.model_path
 
     # model = DeepLab(opts().parse(['--num_classes', '2']))
-    model = UNet(opts().parse(
-        ['--num_classes', '2', '--unet_n1', '16', '--input_c', '3', '--output_c', '2']))
+    model = UNetMini(opts().parse([
+        '--num_classes', '2', '--unet_n1', '4', '--unet_bilinear', '--input_c', '3', '--output_c',
+        '2'
+    ]))
     # model.load_state_dict(torch.load(model_path))
     # print(torch.load(model_path))
     # print(torch.load(model_path).keys())
@@ -85,6 +92,8 @@ def main():
     train_dice_loss = []
     test_bce_loss = []
     test_dice_loss = []
+    train_acc = []
+    test_acc = []
 
     for domain_id in range(1, 5):
         train_dataset = FundusSegmentation(base_dir=os.path.join('..', 'data', 'fundus'),
@@ -103,6 +112,8 @@ def main():
         _dice_loss_tr = 0.0
         _bce_loss_ts = 0.0
         _dice_loss_ts = 0.0
+        _acc_tr = 0.0
+        _acc_ts = 0.0
 
         tbar = tqdm(train_loader)
         for i, sample in enumerate(tbar):
@@ -114,15 +125,18 @@ def main():
                 # print(torch.sum(torch.isnan(output)))
                 _bce_loss_tr += nn.BCELoss()(torch.sigmoid(output), target).item()
                 _dice_loss_tr += dice_loss(output, target)
+                _acc_tr += accuracy(torch.sigmoid(output), target)
+
                 tbar.set_description(
-                    f'[{domain_id}] Train: {_bce_loss_tr / (i + 1):.4f} {_dice_loss_tr / (i + 1):.4f}'
+                    f'[{domain_id}] Train: {_bce_loss_tr / (i + 1):.4f} {_dice_loss_tr / (i + 1):.4f} {_acc_tr / (i + 1):.4f}'
                 )
 
         print(
-            f'[{domain_id}] Train: {_bce_loss_tr / len(train_loader):.4f} {_dice_loss_tr / len(train_loader):.4f}'
+            f'[{domain_id}] Train: {_bce_loss_tr / len(train_loader):.4f} {_dice_loss_tr / len(train_loader):.4f} {_acc_tr / len(train_loader):.4f}'
         )
         train_bce_loss.append(_bce_loss_tr / len(train_loader))
         train_dice_loss.append(_dice_loss_tr / len(train_loader))
+        train_acc.append(_acc_tr / len(train_loader))
 
         tbar = tqdm(test_loader)
         for i, sample in enumerate(tbar):
@@ -132,23 +146,27 @@ def main():
                 output = model(image)
                 _bce_loss_ts += nn.BCELoss()(torch.sigmoid(output), target).item()
                 _dice_loss_ts += dice_loss(output, target)
+                _acc_ts += accuracy(torch.sigmoid(output), target)
                 tbar.set_description(
-                    f'[{domain_id}] Test: {_bce_loss_ts / (i + 1):.4f} {_dice_loss_ts / (i + 1):.4f}'
+                    f'[{domain_id}] Test: {_bce_loss_ts / (i + 1):.4f} {_dice_loss_ts / (i + 1):.4f} {_acc_ts / (i + 1):.4f}'
                 )
 
         print(
-            f'[{domain_id}] Test: {_bce_loss_ts / len(test_loader):.4f} {_dice_loss_ts / len(test_loader):.4f}'
+            f'[{domain_id}] Test: {_bce_loss_ts / len(test_loader):.4f} {_dice_loss_ts / len(test_loader):.4f} {_acc_ts / len(test_loader):.4f}'
         )
         test_bce_loss.append(_bce_loss_ts / len(test_loader))
         test_dice_loss.append(_dice_loss_ts / len(test_loader))
+        test_acc.append(_acc_ts / len(test_loader))
 
     train_bce_loss = np.array(train_bce_loss)
     train_dice_loss = np.array(train_dice_loss)
     test_bce_loss = np.array(test_bce_loss)
     test_dice_loss = np.array(test_dice_loss)
+    train_acc = np.array(train_acc)
+    test_acc = np.array(test_acc)
 
-    print(f'Train: {train_bce_loss.mean():.4f} {train_dice_loss.mean():.4f}')
-    print(f'Test: {test_bce_loss.mean():.4f} {test_dice_loss.mean():.4f}')
+    print(f'Train: {train_bce_loss.mean():.8f} {train_dice_loss.mean():.8f} {train_acc.mean():.8f}')
+    print(f'Test: {test_bce_loss.mean():.8f} {test_dice_loss.mean():.8f} {test_acc.mean():.8f}')
 
 
 if __name__ == '__main__':

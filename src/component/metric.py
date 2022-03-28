@@ -181,3 +181,17 @@ def Balanced_DiceLoss(input, target):
 
     return 0.5 * (DiceLoss(input[:, 0, ...], target[:, 0, ...]) +
                   DiceLoss(input[:, 1, ...], target[:, 1, ...]))
+
+
+def accuracy(pred, target):
+    """
+    :param pred:
+    :param target:
+    :return:
+    """
+    pred = pred.data.cpu()
+    target = target.data.cpu()
+    pred[pred > 0.5] = 1
+    pred[pred <= 0.5] = 0
+    total_size = pred.shape[0] * pred.shape[1] * pred.shape[2] * pred.shape[3]
+    return (pred == target).sum() / total_size
