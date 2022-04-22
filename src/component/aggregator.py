@@ -6,8 +6,6 @@
 # @Email   :   bj.yan.pa@qq.com
 # @License :   Apache License 2.0
 
-from calendar import c
-from http import client
 import time
 
 import numpy as np
