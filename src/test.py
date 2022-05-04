@@ -33,8 +33,8 @@ from fedhf.api import opts
 from fedhf.model.nn import UNet, UNetMini
 
 opt = argparse.ArgumentParser()
-# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedeye.pth'))
-opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedasync.pth'))
+opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedeye-dp.pth'))
+# opt.add_argument('--model_path', type=str, default=os.path.join('chkp', 'archive', 'fedasync.pth'))
 # opt.add_argument('--model_path',
 #  type=str,
 #                  default=os.path.join('chkp', 'archive', 'fedasync-unlimit.pth'))

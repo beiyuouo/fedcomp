@@ -75,7 +75,10 @@ class SyncCoordinator(SimulatedBaseCoordinator):
 
                 for client_id in selected_client:
                     model = deepcopy(self.server.model)
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
                     model = client.train(self.train_data[client_id], model, device=self.args.device)
                     self.server.update(model,
                                        server_model_version=self.server.model.get_model_version(),
@@ -104,7 +107,10 @@ class SyncCoordinator(SimulatedBaseCoordinator):
             if self.args.evaluate_on_client:
                 self.logger.info("Evaluate on client")
                 for client_id in self.client_list:
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
                     result = client.evaluate(data=self.train_data[client_id],
                                              model=self.server.model)
                     self.logger.info(f'Train result on Client {client_id}: {result}')
@@ -156,7 +162,10 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
                 self.logger.info(f'Round {i} Selected clients: {selected_clients}')
 
                 for client_id in selected_clients:
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
 
                     staleness = np.random.randint(
                         low=1,
@@ -224,7 +233,10 @@ class AsyncCoordinator(SimulatedBaseCoordinator):
             if self.args.evaluate_on_client:
                 self.logger.info("Evaluate on client")
                 for client_id in self.client_list:
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
                     result = client.evaluate(data=self.train_data[client_id],
                                              model=self.server.model)
                     self.logger.info(f'Train result on Client {client_id}: {result}')
@@ -284,7 +296,10 @@ class FedEyeCoordinator(SimulatedBaseCoordinator):
 
                 client_id = self._update_order[i]
 
-                client = build_client(self.args.deploy_mode)(self.args, client_id)
+                client = build_client(self.args.deploy_mode)(self.args,
+                                                             client_id,
+                                                             data_size=len(
+                                                                 self.train_data[client_id]))
 
                 self.logger.info(
                     f'Round {i} start train on Client {client_id} with model version : {self._last_update_time[client_id]}'
@@ -346,7 +361,10 @@ class FedEyeCoordinator(SimulatedBaseCoordinator):
             if self.args.evaluate_on_client:
                 self.logger.info("Evaluate on client")
                 for client_id in self.client_list:
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
                     result = client.evaluate(data=self.train_data[client_id],
                                              model=self.server.model)
                     self.logger.info(f'Train result on Client {client_id}: {result}')
@@ -401,7 +419,10 @@ class AsyncCoordinatorUnlimited(SimulatedBaseCoordinator):
 
                 client_id = self._update_order[i]
 
-                client = build_client(self.args.deploy_mode)(self.args, client_id)
+                client = build_client(self.args.deploy_mode)(self.args,
+                                                             client_id,
+                                                             data_size=len(
+                                                                 self.train_data[client_id]))
 
                 self.logger.info(
                     f'Round {i} start train on Client {client_id} with model version : {self._last_update_time[client_id]}'
@@ -458,7 +479,10 @@ class AsyncCoordinatorUnlimited(SimulatedBaseCoordinator):
             if self.args.evaluate_on_client:
                 self.logger.info("Evaluate on client")
                 for client_id in self.client_list:
-                    client = build_client(self.args.deploy_mode)(self.args, client_id)
+                    client = build_client(self.args.deploy_mode)(self.args,
+                                                                 client_id,
+                                                                 data_size=len(
+                                                                     self.train_data[client_id]))
                     result = client.evaluate(data=self.train_data[client_id],
                                              model=self.server.model)
                     self.logger.info(f'Train result on Client {client_id}: {result}')

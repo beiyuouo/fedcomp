@@ -72,6 +72,10 @@ args = opts().parse([
     '--evaluate_on_client',
     '--checkpoint_interval',
     '5',
+    '--scheme',
+    'async',
+    '--dp_mechanism',
+    'gaussian',
 ])
 
 Injector.register('model', {'deeplab': DeepLab})

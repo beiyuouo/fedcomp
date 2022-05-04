@@ -1,1 +1,5 @@
-fedhf==0.2.0
+fedhf==0.2.2
+torch==1.8.2
+torchvision==0.12.1
+tqdm==4.46.0
+matplotlib==3.5.1
