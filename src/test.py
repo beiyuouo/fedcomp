@@ -169,7 +169,10 @@ def main():
     test_acc = np.array(test_acc)
 
     print(f'Train: {train_bce_loss.mean():.8f} {train_dice_loss.mean():.8f} {train_acc.mean():.8f}')
+    print(
+        f'Train: {train_bce_loss.mean():.5f} {1-train_dice_loss.mean():.5f} {train_acc.mean():.5f}')
     print(f'Test: {test_bce_loss.mean():.8f} {test_dice_loss.mean():.8f} {test_acc.mean():.8f}')
+    print(f'Test: {test_bce_loss.mean():.5f} {1-test_dice_loss.mean():.5f} {test_acc.mean():.5f}')
 
 
 if __name__ == '__main__':
