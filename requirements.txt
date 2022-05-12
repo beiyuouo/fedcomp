@@ -1,4 +1,4 @@
-fedhf==0.2.2
+fedhf==0.2.3
 torch==1.8.2
 torchvision==0.12.1
 tqdm==4.46.0

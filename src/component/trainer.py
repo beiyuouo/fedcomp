@@ -28,31 +28,29 @@ from .metric import *
 
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
-        return param_group['lr']
+        return param_group["lr"]
 
 
 class Trainer(BaseTrainer):
-
     def __init__(self, args):
         super(Trainer, self).__init__(args)
         self.epoch = 0
 
-    def train_epoch(self):
+    def train_epoch(self, encryptor=None):
         train_loss = 0.0
         self.model.train()
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
         for i, sample in enumerate(tbar):
             # print(sample.keys())
-            image, target = sample['image'], sample['label']
+            image, target = sample["image"], sample["label"]
             # print(image.shape)
-            if self.device != 'cpu':
+            if self.device != "cpu":
                 image, target = image.cuda(), target.cuda()
             self.optimizer.zero_grad()
             output = self.model(image)
             l2_reg = self._calc_l2_reg(self.model_, self.model)
-            loss = self.criterion(torch.sigmoid(output),
-                                  target) + l2_reg * self.args.fedasync_rho / 2
+            loss = self.criterion(torch.sigmoid(output), target) + l2_reg * self.args.fedasync_rho / 2
             # + dice_loss(output, target)
 
             # _output = torch.sigmoid(output).detach().cpu().numpy()
@@ -66,17 +64,19 @@ class Trainer(BaseTrainer):
             # print(f'count 0: {torch.sum(_output == 0).item()}')
             # print(f'count 1: {torch.sum(_output == 1).item()}')
 
+            if encryptor is not None:
+                encryptor.clip_grad(self.model)
+
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
+            tbar.set_description("Train loss: %.3f" % (train_loss / (i + 1)))
 
-        self.logger.info('[Epoch {}] Train loss: {:.5f}'.format(self.epoch,
-                                                                train_loss / num_img_tr))
+        self.logger.info("[Epoch {}] Train loss: {:.5f}".format(self.epoch, train_loss / num_img_tr))
 
         self.train_loss = train_loss / num_img_tr
 
-    def train(self, dataloader, model, num_epochs, client_id=None, gpus=[], device='cpu'):
+    def train(self, dataloader, model, num_epochs, client_id=None, gpus=[], device="cpu", encryptor=None):
         self.max_epoch = num_epochs
         self.device = device
         self.model = model.to(device)
@@ -89,15 +89,15 @@ class Trainer(BaseTrainer):
         self.criterion = nn.BCELoss()
         # self.criterion = DiceLoss()
 
-        for epoch in trange(self.epoch, self.max_epoch, desc='Train', ncols=80):
+        for epoch in trange(self.epoch, self.max_epoch, desc="Train", ncols=80):
             torch.cuda.empty_cache()
             self.epoch = epoch
-            self.train_epoch()
+            self.train_epoch(encryptor=encryptor)
             self.scheduler.step()
 
         # torch.save(self.model.state_dict(), './chkp/model.pth')
 
-        return {'model': self.model, 'train_loss': self.train_loss}
+        return {"model": self.model, "train_loss": self.train_loss}
 
     def _calc_l2_reg(self, global_model, model):
         l2_reg = 0
